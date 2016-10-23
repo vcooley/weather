@@ -1,4 +1,5 @@
 elm-stuff
 *.sublime-project
 *.sublime-workspace
+Secrets.elm
 build

@@ -7,6 +7,7 @@ import Http
 import Json.Decode as Json
 import Json.Decode exposing ((:=))
 import Task
+import Secrets
 
 main: Program Never
 main =
@@ -16,6 +17,7 @@ main =
     , update = update
     , subscriptions = subscriptions
     }
+
 
 
 -- MODEL
@@ -68,13 +70,13 @@ init =
   )
 
 
+
 -- UPDATE
 
 type Msg
   = RequestLocation
   | LocationSucceed Geolocation.Location
   | LocationFail Error
-  | FetchWeather
   | WeatherSucceed LocalWeather
   | WeatherFail Http.Error
 
@@ -85,28 +87,28 @@ update msg model =
       (model, getLocation)
 
     LocationSucceed newLocation ->
-      ({ model | location = Just newLocation }, getWeather)
+      ({ model | location = Just newLocation }, getWeather newLocation )
 
     LocationFail _->
-      (model, Cmd.none)
-
-    FetchWeather ->
-      (model, Cmd.none)
+      ({ model | location = Nothing }, Cmd.none)
 
     WeatherSucceed newWeather->
       ({ model | localWeather = Just newWeather }, Cmd.none)
 
     WeatherFail _->
-      (model, Cmd.none)
+      ({ model | localWeather= Nothing }, Cmd.none)
 
 getLocation: Cmd Msg
 getLocation =
   Task.perform LocationFail LocationSucceed (Geolocation.now)
 
-getWeather: Cmd Msg
-getWeather =
-  let url=
-    "http://"
+getWeather: Geolocation.Location -> Cmd Msg
+getWeather location =
+  let url =
+    "http://api.openweathermap.org/data/2.5/weather?" ++
+      "lat=" ++ toString location.latitude ++
+      "&lon=" ++ toString location.longitude ++
+      "&APPID=" ++ Secrets.openWeatherApiKey
   in
     Task.perform WeatherFail WeatherSucceed (Http.get decodeLocalWeather url)
 
@@ -159,6 +161,7 @@ decodeLocalWeather =
 subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.none
+
 
 
 -- VIEW
