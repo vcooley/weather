@@ -9,6 +9,7 @@ import Json.Decode as Json
 import Json.Decode exposing ((:=))
 import Task
 import Secrets
+import Icons
 
 
 main: Program Never
@@ -112,7 +113,7 @@ update msg model =
       ({ model | localWeather = Nothing }, Cmd.none)
 
     UnitToggle ->
-      ({ model | fahrenheit = (not model.fahrenheit)}, Cmd.none)
+      ({ model | fahrenheit = (not model.fahrenheit) }, Cmd.none)
 
 getLocation: Cmd Msg
 getLocation =
@@ -214,6 +215,14 @@ renderTemp temp fahrenheit =
     False ->
       toString (toCentigradeInt temp) ++ "°C"
 
+renderIcon: Maybe Weather -> Html Msg
+renderIcon weatherItem =
+  case weatherItem of
+    Nothing ->
+      Icons.sunny
+    Just weatherItem ->
+      Icons.sunny
+
 renderLocalWeather: LocalWeather -> Bool -> Html Msg
 renderLocalWeather localWeather fahrenheit=
   div []
@@ -222,6 +231,7 @@ renderLocalWeather localWeather fahrenheit=
     , div [] [ text ( renderTemp localWeather.main.temp fahrenheit ) ]
     , div [] [ button [ onClick UnitToggle ] [text "Toggle Units"]]
     , div [] [ renderWeather ( List.head localWeather.weather ) ]
+    , div [] [ renderIcon ( List.head localWeather.weather ) ]
     ]
 
 
