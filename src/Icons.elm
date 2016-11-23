@@ -13,8 +13,8 @@ sunShower =
         , Html.node "div" [ Attr.attribute "class" "rain" ] []
         ]
 
-thunderStorm : Html a
-thunderStorm =
+thunderstorm : Html a
+thunderstorm =
     Html.node "div" [ Attr.attribute "class" "icon thunder-storm" ]
         [ Html.node "div" [ Attr.attribute "class" "cloud" ] []
         , Html.node "div" [ Attr.attribute "class" "lightning" ]

@@ -1,7 +1,8 @@
 port module Main exposing (..)
 
 import Html exposing (..)
-import Html.Events exposing (onClick)
+import Html.Attributes exposing (..)
+import Html.Events exposing (onClick, onCheck)
 import Html.App as App
 import Geolocation exposing (..)
 import Http
@@ -91,7 +92,7 @@ type Msg
   | LocationFail Error
   | WeatherSucceed LocalWeather
   | WeatherFail Http.Error
-  | UnitToggle
+  | FahrenheitView Bool
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -112,8 +113,8 @@ update msg model =
     WeatherFail _->
       ({ model | localWeather = Nothing }, Cmd.none)
 
-    UnitToggle ->
-      ({ model | fahrenheit = (not model.fahrenheit) }, Cmd.none)
+    FahrenheitView status ->
+      ({ model | fahrenheit = status }, Cmd.none)
 
 getLocation: Cmd Msg
 getLocation =
@@ -221,16 +222,68 @@ renderIcon weatherItem =
     Nothing ->
       Icons.sunny
     Just weatherItem ->
-      Icons.sunny
+      if weatherItem.id < 300 then
+        Icons.thunderstorm
+      else if weatherItem.id < 600 then
+        Icons.rainy
+      else if weatherItem.id < 700 then
+        Icons.flurries
+      else if weatherItem.id == 800 then
+        Icons.sunny
+      else if weatherItem.id < 900 then
+        Icons.cloudy
+      else
+        Icons.sunny
+
+renderToggleButton =
+{-<div class="switch">
+    <input type="radio" class="switch-input" name="view" value="week" id="week" checked>
+    <label for="week" class="switch-label switch-label-off">F</label>
+    <input type="radio" class="switch-input" name="view" value="month" id="month">
+    <label for="month" class="switch-label switch-label-on">C</label>
+    <span class="switch-selection"></span>
+  </div>
+-}
+  div [ class "switch" ]
+    [ input
+      [ onClick (FahrenheitView False)
+      , type' "radio"
+      , class "switch-input"
+      , name "view"
+      , value "Centigrade"
+      , id "centigrade"
+      , checked True
+      ] []
+    , label
+      [ for "centigrade"
+      , class "switch-label switch-label-off"
+      ] [ text "°C"]
+    , input
+      [ onClick (FahrenheitView True)
+      , type' "radio"
+      , class "switch-input"
+      , name "view"
+      , value "Fahrenheit"
+      , id "fahrenheit"
+      ] []
+    , label
+      [ for "fahrenheit"
+      , class "switch-label switch-label-on"
+      ] [ text "°F"]
+    , span
+      [ class "switch-selection" ] []
+    ]
 
 renderLocalWeather: LocalWeather -> Bool -> Html Msg
 renderLocalWeather localWeather fahrenheit=
   div []
-    [ div [] [ text "My Weather App" ]
-    , div [] [ text localWeather.name ]
-    , div [] [ text ( renderTemp localWeather.main.temp fahrenheit ) ]
-    , div [] [ button [ onClick UnitToggle ] [text "Toggle Units"]]
-    , div [] [ renderWeather ( List.head localWeather.weather ) ]
+    [ h1 [] [ text "My Weather App" ]
+    , p [] [ text localWeather.name ]
+    , p []
+      [ span [] [ text ( renderTemp localWeather.main.temp fahrenheit ) ]
+      , renderToggleButton
+      ]
+    , p [] [ renderWeather ( List.head localWeather.weather ) ]
     , div [] [ renderIcon ( List.head localWeather.weather ) ]
     ]
 
