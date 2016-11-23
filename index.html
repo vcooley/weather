@@ -1,0 +1,19 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Weather</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <div id="main"></div>
+    <script src="build/main.js"></script>
+    <script>
+        var node = document.getElementById('main');
+        var app = Elm.Main.embed(node);
+    </script>
+</body>
+
+</html>

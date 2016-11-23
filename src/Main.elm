@@ -1,6 +1,7 @@
 port module Main exposing (..)
 
 import Html exposing (..)
+import Html.Events exposing (onClick)
 import Html.App as App
 import Geolocation exposing (..)
 import Http
@@ -8,6 +9,7 @@ import Json.Decode as Json
 import Json.Decode exposing ((:=))
 import Task
 import Secrets
+
 
 main: Program Never
 main =
@@ -22,12 +24,14 @@ main =
 
 -- MODEL
 
+
 type alias Weather =
   { id: Int
   , main: String
   , description: String
   , icon: String
   }
+
 
 type alias Main =
   { temp: Float
@@ -37,16 +41,19 @@ type alias Main =
   , temp_max: Float
   }
 
+
 type alias Wind =
   { speed: Float
   , deg: Float
   }
+
 
 type alias Sys =
   { country: String
   , sunrise: Int
   , sunset: Int
   }
+
 
 type alias LocalWeather =
     { weather: List Weather
@@ -58,14 +65,17 @@ type alias LocalWeather =
     , name: String
     }
 
+
 type alias Model =
   { location : Maybe Geolocation.Location
   , localWeather: Maybe LocalWeather
+  , fahrenheit: Bool
   }
+
 
 init : (Model, Cmd Msg)
 init =
-  ( Model Nothing Nothing
+  ( Model Nothing Nothing False
   , getLocation
   )
 
@@ -73,12 +83,15 @@ init =
 
 -- UPDATE
 
+
 type Msg
   = RequestLocation
   | LocationSucceed Geolocation.Location
   | LocationFail Error
   | WeatherSucceed LocalWeather
   | WeatherFail Http.Error
+  | UnitToggle
+
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -96,11 +109,15 @@ update msg model =
       ({ model | localWeather = Just newWeather }, Cmd.none)
 
     WeatherFail _->
-      ({ model | localWeather= Nothing }, Cmd.none)
+      ({ model | localWeather = Nothing }, Cmd.none)
+
+    UnitToggle ->
+      ({ model | fahrenheit = (not model.fahrenheit)}, Cmd.none)
 
 getLocation: Cmd Msg
 getLocation =
   Task.perform LocationFail LocationSucceed (Geolocation.now)
+
 
 getWeather: Geolocation.Location -> Cmd Msg
 getWeather location =
@@ -121,14 +138,16 @@ decodeWeather =
     ("description" := Json.string)
     ("icon" := Json.string)
 
+
 decodeMain: Json.Decoder Main
 decodeMain =
   Json.object5 Main
+    ("temp" := Json.float)
     ("humidity" := Json.float)
     ("pressure" := Json.float)
-    ("temp" := Json.float)
     ("temp_max" := Json.float)
     ("temp_min" := Json.float)
+
 
 decodeWind: Json.Decoder Wind
 decodeWind =
@@ -136,12 +155,14 @@ decodeWind =
     ("deg" := Json.float)
     ("speed" := Json.float)
 
+
 decodeSys: Json.Decoder Sys
 decodeSys =
   Json.object3 Sys
     ("country" := Json.string)
     ("sunrise" := Json.int)
     ("sunset" := Json.int)
+
 
 decodeLocalWeather: Json.Decoder LocalWeather
 decodeLocalWeather =
@@ -158,6 +179,7 @@ decodeLocalWeather =
 
 -- SUBSCRIPTIONS
 
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.none
@@ -166,7 +188,53 @@ subscriptions model =
 
 -- VIEW
 
+
+renderWeather: Maybe Weather -> Html Msg
+renderWeather weatherItem =
+  case weatherItem of
+    Just weather ->
+      div [] [ text weather.main ]
+    Nothing ->
+      div [] [ text "No description available." ]
+
+
+toFahrenheitInt: Float -> Int
+toFahrenheitInt kelvin =
+  round ( 1.8 * (kelvin - 273.15) + 32 )
+
+toCentigradeInt: Float -> Int
+toCentigradeInt kelvin =
+  round ( kelvin - 273.15 )
+
+renderTemp: Float -> Bool -> String
+renderTemp temp fahrenheit =
+  case fahrenheit of
+    True ->
+      toString (toFahrenheitInt temp) ++ "°F"
+    False ->
+      toString (toCentigradeInt temp) ++ "°C"
+
+renderLocalWeather: LocalWeather -> Bool -> Html Msg
+renderLocalWeather localWeather fahrenheit=
+  div []
+    [ div [] [ text "My Weather App" ]
+    , div [] [ text localWeather.name ]
+    , div [] [ text ( renderTemp localWeather.main.temp fahrenheit ) ]
+    , div [] [ button [ onClick UnitToggle ] [text "Toggle Units"]]
+    , div [] [ renderWeather ( List.head localWeather.weather ) ]
+    ]
+
+
+renderLoading: String -> Html Msg
+renderLoading message =
+  div [] [text message]
+
+
 view : Model -> Html Msg
 view model =
-  div []
-    [text (toString model)]
+  case model.localWeather of
+    Just weather ->
+      renderLocalWeather weather model.fahrenheit
+
+    Nothing ->
+      renderLoading "Loading local weather...."
